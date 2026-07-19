@@ -1,0 +1,9 @@
+{
+  "appName": "AI Platform",
+  "timeframes": ["D1", "H4", "H1", "M15"],
+  "mode": "placeholder",
+  "execution": {
+    "enabled": false,
+    "broker": "MetaTrader"
+  }
+}
