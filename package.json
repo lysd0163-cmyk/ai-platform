@@ -1,0 +1,14 @@
+{
+  "name": "ai-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Institutional trading analysis platform",
+  "main": "dashboard/app.js",
+  "scripts": {
+    "start": "node dashboard/app.js",
+    "test": "node -e \"console.log('No tests yet')\""
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
