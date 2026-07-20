@@ -7,6 +7,7 @@ const { runAnalysis } = require('../analysis');
 const { buildInstitutionalZones } = require('../zone_engine');
 const { createMonitoringState } = require('../monitoring_engine/state');
 const { runMonitoringLoop } = require('../monitoring_engine/loop');
+const { evaluateEntry } = require('../entry_engine');
 const { validateExecutionOrder } = require('../execution_engine/validator');
 const { submitExecutionOrder } = require('../execution_engine/bridge');
 const { simulateBacktest } = require('../backtesting_engine/simulator');
@@ -65,6 +66,11 @@ function startOrchestrator({ strategyInput = null, pairs = null, timeframes = nu
       strategy: strategyPipeline.compiled,
     });
     const zones = buildInstitutionalZones({ analysis });
+    const m15Entry = evaluateEntry({
+      zone: zones.selectedZone,
+      side: zones.selectedSide,
+      snapshots,
+    });
     const monitoringState = createMonitoringState({
       pair,
       timeframes: effectiveTimeframes,
@@ -75,9 +81,10 @@ function startOrchestrator({ strategyInput = null, pairs = null, timeframes = nu
       zones: [zones.buyZone, zones.sellZone].filter(Boolean),
       latestSnapshot: snapshots[snapshots.length - 1] || null,
       previousState: monitoringState,
+      entrySignal: m15Entry,
     });
-    const executionOrder = deriveExecutionOrder(pair, zones.selectedZone, zones.selectedSide);
-    const validation = executionOrder ? validateExecutionOrder(executionOrder) : { valid: false, issues: ['zone-missing'], status: 'blocked' };
+    const executionOrder = monitoring.rebuildRequested || !m15Entry.passed ? null : deriveExecutionOrder(pair, zones.selectedZone, zones.selectedSide);
+    const validation = executionOrder ? validateExecutionOrder(executionOrder) : { valid: false, issues: ['zone-missing-or-entry-incomplete'], status: 'blocked' };
     const transportOrder = validation.valid ? submitExecutionOrder(executionOrder) : null;
 
     return {
@@ -86,6 +93,7 @@ function startOrchestrator({ strategyInput = null, pairs = null, timeframes = nu
       snapshots,
       analysis,
       zones,
+      entry: m15Entry,
       monitoring,
       execution: {
         executionOrder,
