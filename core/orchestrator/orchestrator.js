@@ -31,16 +31,19 @@ function deriveExecutionOrder(pair, zone, side) {
   };
 }
 
-function startOrchestrator({ strategyInput = null, pairs = null, timeframes = null, marketData = {}, chartData = {}, candleLimit = 500 } = {}) {
+async function startOrchestrator({ strategyInput = null, pairs = null, timeframes = null, marketData = {}, chartData = {}, candleLimit = 500, provider = null, cache = null, retries = 2 } = {}) {
   const effectivePairs = Array.isArray(pairs) && pairs.length > 0 ? pairs : getDefaultPairs();
   const effectiveTimeframes = Array.isArray(timeframes) && timeframes.length > 0 ? timeframes : getTimeframes();
   const strategyPipeline = runStrategyPipeline(strategyInput || {});
-  const acquisition = acquireMarketPackage({
+  const acquisition = await acquireMarketPackage({
     pairs: effectivePairs,
     timeframes: effectiveTimeframes,
     marketData,
     chartData,
     limit: candleLimit,
+    provider,
+    cache,
+    retries,
   });
 
   const pairRuns = acquisition.packageByPair.map((pairPackage) => {
