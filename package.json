@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "description": "Institutional trading analysis platform",
-  "main": "dashboard/app.js",
+  "main": "index.js",
+  "type": "commonjs",
   "scripts": {
-    "start": "node dashboard/app.js",
-    "test": "node -e \"console.log('No tests yet')\""
+    "start": "node index.js",
+    "validate": "node scripts/validate-foundation.js",
+    "status": "node -e \"const cfg=require('./config/default.json'); console.log(JSON.stringify({appName:cfg.appName,timeframes:cfg.timeframes,execution:cfg.execution}, null, 2))\""
   },
   "engines": {
     "node": ">=18"
