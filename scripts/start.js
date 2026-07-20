@@ -1,3 +1,3 @@
-const { startOrchestrator } = require('../core/orchestrator');
+const { startPlatform } = require('../core/runtime/bootstrap');
 
-startOrchestrator();
+startPlatform();
