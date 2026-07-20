@@ -1,8 +1,14 @@
-function resolveLiquidity({ signals = [] } = {}) {
+function resolveLiquidity({ signals = [], scanned = null } = {}) {
+  const sweeps = scanned?.sweeps || signals.filter((signal) => signal?.side);
+  const bias = scanned?.bias || (sweeps.some((sweep) => sweep.side === 'buy-side') ? 'bullish' : sweeps.some((sweep) => sweep.side === 'sell-side') ? 'bearish' : 'neutral');
+
   return {
     signals,
-    status: 'placeholder',
-    resolved: signals.length > 0,
+    scanned,
+    bias,
+    sweeps,
+    resolved: sweeps.length > 0,
+    status: sweeps.length > 0 ? 'resolved' : 'unresolved',
   };
 }
 
