@@ -1,8 +1,6 @@
 const http = require('http');
 
-const port = process.env.PORT || 3000;
-
-function startDashboard({ runtime = null } = {}) {
+function startDashboard({ port = process.env.PORT || 3000, runtime = null } = {}) {
   const server = http.createServer((req, res) => {
     const summary = runtime
       ? {
@@ -34,8 +32,6 @@ function startDashboard({ runtime = null } = {}) {
 
   return server;
 }
-
-startDashboard();
 
 module.exports = {
   startDashboard,
