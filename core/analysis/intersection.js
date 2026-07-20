@@ -1,10 +1,21 @@
 function intersectLayers(layers = []) {
-  const passed = layers.filter((layer) => layer === true);
+  const normalizedLayers = layers.map((layer) => ({
+    name: layer?.name || 'unknown',
+    value: Boolean(layer?.value),
+    reason: layer?.reason || '',
+    meta: layer?.meta || {},
+  }));
+
+  const passingLayers = normalizedLayers.filter((layer) => layer.value);
+  const failingLayers = normalizedLayers.filter((layer) => !layer.value);
+
   return {
-    passedCount: passed.length,
-    totalCount: layers.length,
-    passed,
-    valid: layers.length > 0 && passed.length === layers.length,
+    passingLayers,
+    failingLayers,
+    passedCount: passingLayers.length,
+    totalCount: normalizedLayers.length,
+    valid: normalizedLayers.length > 0 && failingLayers.length === 0,
+    reasons: failingLayers.map((layer) => `${layer.name}: ${layer.reason || 'failed'}`),
   };
 }
 
