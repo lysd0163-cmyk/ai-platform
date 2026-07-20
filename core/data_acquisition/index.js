@@ -1,6 +1,8 @@
 const { trimCandleWindow, normalizeCandles } = require('./window');
-const { normalizeChartAsset, collectChartEvidence } = require('./charts');
+const { normalizeChartAsset, collectChartEvidence, ensureChartEvidence } = require('./charts');
+const { createGeneratedChartEvidence } = require('./generated_chart');
 const { createDataProvider } = require('./provider');
+const { createTwelveDataProvider, normalizePairSymbol, mapTimeframeToInterval } = require('./twelvedata');
 const { createAcquisitionCache } = require('./cache');
 const { validateCandles, validateChartEvidence, validateAcquisitionSnapshot } = require('./validator');
 const { chooseLatestTimestamp, synchronizeAcquisition } = require('./sync');
@@ -13,7 +15,12 @@ module.exports = {
   normalizeCandles,
   normalizeChartAsset,
   collectChartEvidence,
+  ensureChartEvidence,
+  createGeneratedChartEvidence,
   createDataProvider,
+  createTwelveDataProvider,
+  normalizePairSymbol,
+  mapTimeframeToInterval,
   createAcquisitionCache,
   validateCandles,
   validateChartEvidence,
