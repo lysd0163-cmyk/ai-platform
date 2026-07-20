@@ -1,5 +1,5 @@
 const { trimCandleWindow } = require('./window');
-const { collectChartEvidence } = require('./charts');
+const { collectChartEvidence, ensureChartEvidence } = require('./charts');
 const { createDataProvider } = require('./provider');
 const { createAcquisitionCache } = require('./cache');
 const { validateAcquisitionSnapshot } = require('./validator');
@@ -45,10 +45,13 @@ async function acquirePairTimeframeData({
     return cached;
   }
 
-  const candles = await withRetry(async () => dataProvider.fetchCandles({ pair, timeframe, source }), { retries });
+  const candles = await withRetry(async () => dataProvider.fetchCandles({ pair, timeframe, source, limit }), { retries });
   const charts = await withRetry(async () => dataProvider.fetchCharts({ pair, timeframe, source }), { retries });
   const candlesWindow = trimCandleWindow(Array.isArray(candles) ? candles : source.candles || [], limit);
-  const chartEvidence = collectChartEvidence({ pair, timeframe, chartAssets: resolveChartAssets({ source, chartAssets: Array.isArray(charts) ? charts : [] }) });
+  const externalChartEvidence = collectChartEvidence({ pair, timeframe, chartAssets: resolveChartAssets({ source, chartAssets: Array.isArray(charts) ? charts : [] }) });
+  const chartEvidence = externalChartEvidence.length > 0
+    ? externalChartEvidence
+    : ensureChartEvidence({ pair, timeframe, candles: candlesWindow.candles, chartAssets: [] });
   const synchronized = synchronizeAcquisition({
     pair,
     timeframe,
