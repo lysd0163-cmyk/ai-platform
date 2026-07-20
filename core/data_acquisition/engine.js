@@ -1,9 +1,29 @@
 const { trimCandleWindow } = require('./window');
 const { collectChartEvidence } = require('./charts');
 
+function resolveChartAssets({ source = {}, chartAssets = [] } = {}) {
+  if (Array.isArray(chartAssets) && chartAssets.length > 0) {
+    return chartAssets;
+  }
+
+  if (Array.isArray(source.chartAssets) && source.chartAssets.length > 0) {
+    return source.chartAssets;
+  }
+
+  if (Array.isArray(source.chartImages) && source.chartImages.length > 0) {
+    return source.chartImages;
+  }
+
+  if (source.chartImage) {
+    return [source.chartImage];
+  }
+
+  return [];
+}
+
 function acquirePairTimeframeData({ pair, timeframe, source = {}, chartAssets = [], limit = 500 } = {}) {
   const window = trimCandleWindow(Array.isArray(source.candles) ? source.candles : [], limit);
-  const chartEvidence = collectChartEvidence({ pair, timeframe, chartAssets: chartAssets.length ? chartAssets : source.chartAssets || source.chartImages || source.chartImage ? [source.chartImage || source.chartImages || source.chartAssets].flat() : [] });
+  const chartEvidence = collectChartEvidence({ pair, timeframe, chartAssets: resolveChartAssets({ source, chartAssets }) });
 
   return {
     pair,
@@ -47,6 +67,7 @@ function acquireMarketPackage({ pairs = [], timeframes = [], marketData = {}, ch
 }
 
 module.exports = {
+  resolveChartAssets,
   acquirePairTimeframeData,
   acquireMarketPackage,
 };
