@@ -3,15 +3,15 @@ const { createAcquisitionLoop } = require('../data_acquisition');
 const { startApi } = require('../../api/server');
 const { startDashboard } = require('../../dashboard/app');
 
-function startPlatform({ strategyInput = null, pairs = null, timeframes = null, marketData = {}, chartData = {}, candleLimit = 500, refreshIntervalMs = 30000, apiPort = 4000, dashboardPort = 3000 } = {}) {
+async function startPlatform({ strategyInput = null, pairs = null, timeframes = null, marketData = {}, chartData = {}, candleLimit = 500, refreshIntervalMs = 30000, apiPort = 4000, dashboardPort = 3000, provider = null, cache = null, retries = 2 } = {}) {
   const runtimeRef = {
-    current: startOrchestrator({ strategyInput, pairs, timeframes, marketData, chartData, candleLimit }),
+    current: await startOrchestrator({ strategyInput, pairs, timeframes, marketData, chartData, candleLimit, provider, cache, retries }),
   };
 
   const acquisitionLoop = createAcquisitionLoop({
     intervalMs: refreshIntervalMs,
     acquireFn: async () => {
-      runtimeRef.current = startOrchestrator({ strategyInput, pairs, timeframes, marketData, chartData, candleLimit });
+      runtimeRef.current = await startOrchestrator({ strategyInput, pairs, timeframes, marketData, chartData, candleLimit, provider, cache, retries });
       return runtimeRef.current;
     },
   });
