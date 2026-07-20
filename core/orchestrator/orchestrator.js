@@ -1,8 +1,7 @@
 const { runStrategyPipeline } = require('../strategy_engine');
-const { assembleMarketSnapshot } = require('../market_data/assembler');
-const { fetchMarketData } = require('../market_data/fetcher');
 const { getDefaultPairs } = require('../market_data/pairs');
 const { getTimeframes } = require('../market_data/timeframes');
+const { acquireMarketPackage } = require('../data_acquisition');
 const { runAnalysis } = require('../analysis');
 const { buildInstitutionalZones } = require('../zone_engine');
 const { createMonitoringState } = require('../monitoring_engine/state');
@@ -32,32 +31,21 @@ function deriveExecutionOrder(pair, zone, side) {
   };
 }
 
-function createSnapshotsForPair(pair, timeframes = [], marketData = {}) {
-  return timeframes.map((timeframe) => {
-    const source = marketData?.[pair]?.[timeframe] || {};
-    const fetched = fetchMarketData({
-      pair,
-      timeframe,
-      candles: Array.isArray(source.candles) ? source.candles : [],
-      source: source.source || 'placeholder',
-    });
-
-    return assembleMarketSnapshot({
-      pair,
-      timeframe,
-      candles: fetched.candles,
-      source: fetched.source,
-    });
-  });
-}
-
-function startOrchestrator({ strategyInput = null, pairs = null, timeframes = null, marketData = {} } = {}) {
+function startOrchestrator({ strategyInput = null, pairs = null, timeframes = null, marketData = {}, chartData = {}, candleLimit = 500 } = {}) {
   const effectivePairs = Array.isArray(pairs) && pairs.length > 0 ? pairs : getDefaultPairs();
   const effectiveTimeframes = Array.isArray(timeframes) && timeframes.length > 0 ? timeframes : getTimeframes();
   const strategyPipeline = runStrategyPipeline(strategyInput || {});
+  const acquisition = acquireMarketPackage({
+    pairs: effectivePairs,
+    timeframes: effectiveTimeframes,
+    marketData,
+    chartData,
+    limit: candleLimit,
+  });
 
-  const pairRuns = effectivePairs.map((pair) => {
-    const snapshots = createSnapshotsForPair(pair, effectiveTimeframes, marketData);
+  const pairRuns = acquisition.packageByPair.map((pairPackage) => {
+    const pair = pairPackage.pair;
+    const snapshots = pairPackage.timeframes;
     const analysis = runAnalysis({
       pair,
       timeframes: effectiveTimeframes,
@@ -90,6 +78,7 @@ function startOrchestrator({ strategyInput = null, pairs = null, timeframes = nu
     return {
       pair,
       timeframes: effectiveTimeframes,
+      acquisition: pairPackage,
       snapshots,
       analysis,
       zones,
@@ -126,6 +115,8 @@ function startOrchestrator({ strategyInput = null, pairs = null, timeframes = nu
     status: 'ready',
     pairs: effectivePairs,
     timeframes: effectiveTimeframes,
+    candleLimit,
+    acquisition,
     strategyPipeline,
     pairRuns,
     backtest,
@@ -136,6 +127,5 @@ function startOrchestrator({ strategyInput = null, pairs = null, timeframes = nu
 
 module.exports = {
   deriveExecutionOrder,
-  createSnapshotsForPair,
   startOrchestrator,
 };
