@@ -1,13 +1,32 @@
 const http = require('http');
 
-function startApi({ port = 4000, runtime = null } = {}) {
+function readRuntime(runtimeOrRef = null) {
+  if (!runtimeOrRef) {
+    return null;
+  }
+
+  if (typeof runtimeOrRef === 'function') {
+    return runtimeOrRef();
+  }
+
+  if (typeof runtimeOrRef === 'object' && runtimeOrRef.current) {
+    return runtimeOrRef.current;
+  }
+
+  return runtimeOrRef;
+}
+
+function startApi({ port = 4000, runtime = null, runtimeRef = null } = {}) {
   const server = http.createServer((req, res) => {
-    const summary = runtime
+    const currentRuntime = readRuntime(runtimeRef || runtime);
+    const summary = currentRuntime
       ? {
-          status: runtime.status || 'running',
-          pairs: Array.isArray(runtime.pairRuns) ? runtime.pairRuns.length : 0,
-          strategy: runtime.strategyPipeline?.compiled?.strategyName || null,
-          backtestTrades: runtime.backtest?.trades?.length || 0,
+          status: currentRuntime.status || 'running',
+          pairs: Array.isArray(currentRuntime.pairRuns) ? currentRuntime.pairRuns.length : 0,
+          strategy: currentRuntime.strategyPipeline?.compiled?.strategyName || null,
+          backtestTrades: currentRuntime.backtest?.trades?.length || 0,
+          acquisitionPairs: currentRuntime.acquisition?.packageByPair?.length || 0,
+          acquisitionLimit: currentRuntime.candleLimit || currentRuntime.acquisition?.limit || null,
         }
       : null;
 
