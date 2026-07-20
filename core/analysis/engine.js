@@ -4,7 +4,33 @@ const { intersectLayers } = require('./intersection');
 const { scoreAnalysis } = require('./scorer');
 const { buildAnalysisReport } = require('./reporter');
 
-function choosePrimarySide({ premiumDiscount, structure, momentum }) {
+function choosePrimarySide({ premiumDiscount, structure, momentum, liquidity, orderBlock, fvg }) {
+  const buyVotes = [
+    premiumDiscount?.bias === 'discount',
+    structure?.bullishStructure === true,
+    momentum?.direction === 'buy',
+    liquidity?.bias?.startsWith('bullish'),
+    orderBlock?.direction === 'buy',
+    fvg?.direction === 'buy',
+  ].filter(Boolean).length;
+
+  const sellVotes = [
+    premiumDiscount?.bias === 'premium',
+    structure?.bearishStructure === true,
+    momentum?.direction === 'sell',
+    liquidity?.bias?.startsWith('bearish'),
+    orderBlock?.direction === 'sell',
+    fvg?.direction === 'sell',
+  ].filter(Boolean).length;
+
+  if (buyVotes > sellVotes) {
+    return 'buy';
+  }
+
+  if (sellVotes > buyVotes) {
+    return 'sell';
+  }
+
   if (premiumDiscount?.bias === 'discount' && (structure?.bullishStructure || momentum?.direction === 'buy')) {
     return 'buy';
   }
@@ -33,6 +59,7 @@ function runAnalysis({ pair, timeframes = [], marketSnapshots = [], compiledRule
     range: analysis.range,
     trend: analysis.trend,
     bias: analysis.signals.premiumDiscount?.bias,
+    signals: analysis.signals,
   });
 
   const buyZone = rankZone(candidateZones.buyZone, analysis);
@@ -41,6 +68,9 @@ function runAnalysis({ pair, timeframes = [], marketSnapshots = [], compiledRule
     premiumDiscount: analysis.signals.premiumDiscount,
     structure: analysis.signals.structure,
     momentum: analysis.signals.momentum,
+    liquidity: analysis.signals.liquidity,
+    orderBlock: analysis.signals.orderBlock,
+    fvg: analysis.signals.fvg,
   });
   const selectedZone = primarySide === 'buy' ? buyZone : sellZone;
 
