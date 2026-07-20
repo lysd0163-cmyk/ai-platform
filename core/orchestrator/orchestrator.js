@@ -1,6 +1,8 @@
 const { runStrategyPipeline } = require('../strategy_engine');
 const { assembleMarketSnapshot } = require('../market_data/assembler');
 const { fetchMarketData } = require('../market_data/fetcher');
+const { getDefaultPairs } = require('../market_data/pairs');
+const { getTimeframes } = require('../market_data/timeframes');
 const { runAnalysis } = require('../analysis');
 const { buildInstitutionalZones } = require('../zone_engine');
 const { createMonitoringState } = require('../monitoring_engine/state');
@@ -48,14 +50,16 @@ function createSnapshotsForPair(pair, timeframes = [], marketData = {}) {
   });
 }
 
-function startOrchestrator({ strategyInput = null, pairs = [], timeframes = ['D1', 'H4', 'H1', 'M15'], marketData = {} } = {}) {
+function startOrchestrator({ strategyInput = null, pairs = null, timeframes = null, marketData = {} } = {}) {
+  const effectivePairs = Array.isArray(pairs) && pairs.length > 0 ? pairs : getDefaultPairs();
+  const effectiveTimeframes = Array.isArray(timeframes) && timeframes.length > 0 ? timeframes : getTimeframes();
   const strategyPipeline = runStrategyPipeline(strategyInput || {});
 
-  const pairRuns = pairs.map((pair) => {
-    const snapshots = createSnapshotsForPair(pair, timeframes, marketData);
+  const pairRuns = effectivePairs.map((pair) => {
+    const snapshots = createSnapshotsForPair(pair, effectiveTimeframes, marketData);
     const analysis = runAnalysis({
       pair,
-      timeframes,
+      timeframes: effectiveTimeframes,
       marketSnapshots: snapshots,
       compiledRules: strategyPipeline.compiled.rules,
       strategy: strategyPipeline.compiled,
@@ -63,7 +67,7 @@ function startOrchestrator({ strategyInput = null, pairs = [], timeframes = ['D1
     const zones = buildInstitutionalZones({ analysis });
     const monitoringState = createMonitoringState({
       pair,
-      timeframes,
+      timeframes: effectiveTimeframes,
       zones: [zones.buyZone, zones.sellZone].filter(Boolean),
     });
     const monitoring = runMonitoringLoop({
@@ -78,7 +82,7 @@ function startOrchestrator({ strategyInput = null, pairs = [], timeframes = ['D1
 
     return {
       pair,
-      timeframes,
+      timeframes: effectiveTimeframes,
       snapshots,
       analysis,
       zones,
@@ -112,6 +116,8 @@ function startOrchestrator({ strategyInput = null, pairs = [], timeframes = ['D1
 
   return {
     status: 'ready',
+    pairs: effectivePairs,
+    timeframes: effectiveTimeframes,
     strategyPipeline,
     pairRuns,
     backtest,
