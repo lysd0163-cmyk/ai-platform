@@ -1,3 +1,6 @@
 const { startPlatform } = require('../core/runtime/bootstrap');
 
-startPlatform();
+startPlatform().catch((error) => {
+  console.error('Failed to start AI Platform:', error);
+  process.exitCode = 1;
+});
